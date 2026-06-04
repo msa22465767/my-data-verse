@@ -1,159 +1,161 @@
-import React, { useState, useEffect } from 'react'
-import './App.css'
+import React, { useState, useEffect, useRef } from 'react';
+import './App.css';
 
 function App() {
-  const [activeChat, setActiveChat] = useState('global')
-  const [showSidebar, setShowSidebar] = useState(false)
-  const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeChat, setActiveChat] = useState('global');
+  const messagesEndRef = useRef(null);
+  
+  // ⚠️ CHANGE THIS TO YOUR BACKEND URL
+  const BACKEND_URL = "http://192.168.x.x:5000"; // Laptop IP daalo
+  // const BACKEND_URL = "https://your-render-backend.onrender.com"; // Jab Render fix ho jaye
+
+  // Auto-scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/messages')
+    scrollToBottom();
+  }, [messages]);
+
+  // Fetch messages
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/messages`)
       .then(res => res.json())
       .then(data => setMessages(data))
-      .catch(err => console.log("Error loading messages:", err))
-  }, [])
+      .catch(err => console.error("Error:", err));
+    
+    // Polling for real-time (temporary until Socket.io)
+    const interval = setInterval(() => {
+      fetch(`${BACKEND_URL}/api/messages`)
+        .then(res => res.json())
+        .then(data => setMessages(data));
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [BACKEND_URL]);
 
-  const handleSend = async () => {
-    if (message.trim() !== '') {
-      try {
-        const response = await fetch('http://localhost:5000/api/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender: 'You', text: message, type: 'text' })
-        })
-        const newMsg = await response.json()
-        setMessages([...messages, newMsg])
-        setMessage('')
-      } catch (err) {
-        console.error("Error sending message:", err)
+  // Send message
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const tempMessage = { text: input, sender: 'You', temp: true };
+    setMessages([...messages, tempMessage]);
+    setInput('');
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: input, sender: 'You' })
+      });
+
+      if (response.ok) {
+        const newMessage = await response.json();
+        setMessages(prev => prev.filter(m => !m.temp).concat(newMessage));
       }
+    } catch (error) {
+      alert("Message send failed!");
+      setMessages(prev => prev.filter(m => !m.temp));
     }
-  }
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      try {
-        const response = await fetch('http://localhost:5000/api/upload', {
-          method: 'POST',
-          body: formData
-        })
-        const newMsg = await response.json()
-        setMessages([...messages, newMsg])
-      } catch (err) {
-        console.error("Error uploading file:", err)
-      }
-    }
-  }
-
-  const closeSidebar = () => {
-    setShowSidebar(false)
-  }
+  };
 
   return (
-    <div className="app-container">
-      {/* Backdrop Overlay */}
-      <div 
-        className={`backdrop ${showSidebar ? 'show' : ''}`} 
-        onClick={closeSidebar}
-      />
-
+    <div className="telegram-container">
       {/* Sidebar */}
-      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
+      <div className="sidebar">
         <div className="sidebar-header">
-          MyDataVerse
+          <div className="avatar">✨</div>
+          <h3>MyDataVerse</h3>
         </div>
-        <div className="sidebar-menu">
+        
+        <div className="search-bar">
+          <input type="text" placeholder="Search chats..." />
+        </div>
+
+        <div className="chat-list">
           <div 
-            onClick={() => {
-              setActiveChat('global')
-              closeSidebar()
-            }} 
-            className={`menu-item ${activeChat === 'global' ? 'active' : ''}`}
+            className={`chat-item ${activeChat === 'global' ? 'active' : ''}`}
+            onClick={() => setActiveChat('global')}
           >
-            Global Vault
+            <div className="chat-avatar">🌐</div>
+            <div className="chat-info">
+              <h4>Global Vault</h4>
+              <p>Tap to start messaging...</p>
+            </div>
           </div>
-          <div 
-            onClick={() => {
-              setActiveChat('saved')
-              closeSidebar()
-            }} 
-            className={`menu-item ${activeChat === 'saved' ? 'active' : ''}`}
-          >
-            Saved Messages
+          
+          <div className="chat-item">
+            <div className="chat-avatar">⭐</div>
+            <div className="chat-info">
+              <h4>Saved Messages</h4>
+              <p>Your private space</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Chat Window */}
-      <div className="chat-main">
+      <div className="chat-window">
         <div className="chat-header">
-          <button 
-            onClick={() => setShowSidebar(true)} 
-            className="menu-button"
-          >
-            ☰ Menu
-          </button>
-          <span>{activeChat === 'global' ? 'Global Storage' : 'Saved Messages'}</span>
+          <div className="chat-info">
+            <h3>Global Vault</h3>
+            <span className="status">online</span>
+          </div>
         </div>
 
-        <div className="messages-area">
-          {messages.map((msg, i) => (
+        <div className="messages-container">
+          {messages.map((msg, index) => (
             <div 
-              key={i} 
-              className="message-bubble"
-              style={{ 
-                alignSelf: msg.sender === 'You' ? 'flex-end' : 'flex-start',
-                backgroundColor: msg.sender === 'You' ? '#effdde' : '#ffffff'
-              }}
+              key={index} 
+              className={`message-group ${msg.sender === 'You' ? 'sent' : 'received'}`}
             >
-              <div className="message-sender">{msg.sender}</div>
-              
-              {msg.type === 'file' ? (
-                <div>
-                  <div className="message-text">File: {msg.text}</div>
-                  <a 
-                    href={msg.fileUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="file-link"
-                  >
-                    📎 Download File
-                  </a>
-                </div>
-              ) : (
-                <div className="message-text">{msg.text}</div>
+              {msg.sender !== 'You' && (
+                <div className="message-avatar">🤖</div>
               )}
-
-              <div className="message-time">{msg.time}</div>
+              <div className="message-bubble">
+                {msg.sender !== 'You' && (
+                  <div className="sender-name">{msg.sender}</div>
+                )}
+                <div className="message-text">{msg.text}</div>
+                <div className="message-time">
+                  {new Date().toLocaleTimeString()}
+                  {msg.sender === 'You' && ' ✓'}
+                </div>
+              </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
-        <div className="input-footer">
-          <label className="attach-button">
-            📎 Attach
-            <input type="file" onChange={handleFileUpload} style={{ display: 'none' }} />
-          </label>
+        {isTyping && (
+          <div className="typing-indicator">
+            Someone is typing...
+          </div>
+        )}
+
+        <form onSubmit={sendMessage} className="input-container">
+          <button type="button" className="attach-btn">📎</button>
           <input 
             type="text" 
-            placeholder="Write a message..." 
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            className="message-input"
+            placeholder="Write a message..."
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setIsTyping(true);
+              setTimeout(() => setIsTyping(false), 1000);
+            }}
           />
-          <button onClick={handleSend} className="send-button">
-            Send
-          </button>
-        </div>
+          <button type="button" className="emoji-btn">😊</button>
+          <button type="submit" className="send-btn">➤</button>
+        </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

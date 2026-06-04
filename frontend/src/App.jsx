@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import './App.css'
 
 function App() {
   const [activeChat, setActiveChat] = useState('global')
-  const [showSidebar, setShowSidebar] = useState(true)
+  const [showSidebar, setShowSidebar] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
 
-  // 1. Laptop ke Database se purane saare messages load karna
   useEffect(() => {
     fetch('http://localhost:5000/api/messages')
       .then(res => res.json())
@@ -14,7 +14,6 @@ function App() {
       .catch(err => console.log("Error loading messages:", err))
   }, [])
 
-  // 2. Text message send karke database me save karna
   const handleSend = async () => {
     if (message.trim() !== '') {
       try {
@@ -32,7 +31,6 @@ function App() {
     }
   }
 
-  // 3. File upload karke database aur laptop ki hard disk me save karna
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -52,60 +50,93 @@ function App() {
     }
   }
 
+  const closeSidebar = () => {
+    setShowSidebar(false)
+  }
+
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', margin: 0, padding: 0, fontFamily: 'sans-serif', backgroundColor: '#e7ebf0', overflow: 'hidden' }}>
-      
-      {/* LEFT SIDEBAR */}
-      <div style={{ width: '30%', minWidth: '250px', backgroundColor: '#ffffff', borderRight: '1px solid #dadada', display: showSidebar ? 'flex' : 'none', flexDirection: 'column' }}>
-        <div style={{ backgroundColor: '#507da2', color: 'white', padding: '15px', fontSize: '20px', fontWeight: 'bold' }}>
+    <div className="app-container">
+      {/* Backdrop Overlay */}
+      <div 
+        className={`backdrop ${showSidebar ? 'show' : ''}`} 
+        onClick={closeSidebar}
+      />
+
+      {/* Sidebar */}
+      <div className={`sidebar ${showSidebar ? 'open' : ''}`}>
+        <div className="sidebar-header">
           MyDataVerse
         </div>
-        <div style={{ flex: 1, padding: '10px' }}>
-          <div onClick={() => setActiveChat('global')} style={{ padding: '15px', borderRadius: '8px', cursor: 'pointer', backgroundColor: activeChat === 'global' ? '#f2f6fa' : 'transparent', fontWeight: 'bold', color: '#333', marginBottom: '5px' }}>
+        <div className="sidebar-menu">
+          <div 
+            onClick={() => {
+              setActiveChat('global')
+              closeSidebar()
+            }} 
+            className={`menu-item ${activeChat === 'global' ? 'active' : ''}`}
+          >
             Global Vault
           </div>
-          <div onClick={() => setActiveChat('saved')} style={{ padding: '15px', borderRadius: '8px', cursor: 'pointer', backgroundColor: activeChat === 'saved' ? '#f2f6fa' : 'transparent', fontWeight: 'bold', color: '#333' }}>
+          <div 
+            onClick={() => {
+              setActiveChat('saved')
+              closeSidebar()
+            }} 
+            className={`menu-item ${activeChat === 'saved' ? 'active' : ''}`}
+          >
             Saved Messages
           </div>
         </div>
       </div>
 
-      {/* RIGHT CHAT WINDOW */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#f4f4f5' }}>
-        <div style={{ backgroundColor: '#ffffff', padding: '15px 20px', borderBottom: '1px solid #dadada', fontWeight: 'bold', fontSize: '18px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button onClick={() => setShowSidebar(!showSidebar)} style={{ padding: '5px 10px', background: '#507da2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
-            Menu
+      {/* Main Chat Window */}
+      <div className="chat-main">
+        <div className="chat-header">
+          <button 
+            onClick={() => setShowSidebar(true)} 
+            className="menu-button"
+          >
+            ☰ Menu
           </button>
           <span>{activeChat === 'global' ? 'Global Storage' : 'Saved Messages'}</span>
         </div>
 
-        {/* Messages display list */}
-        <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="messages-area">
           {messages.map((msg, i) => (
-            <div key={i} style={{ alignSelf: msg.sender === 'You' ? 'flex-end' : 'flex-start', backgroundColor: msg.sender === 'You' ? '#effdde' : '#ffffff', padding: '10px 15px', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', maxWidth: '70%' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#549cdd', marginBottom: '3px' }}>{msg.sender}</div>
+            <div 
+              key={i} 
+              className="message-bubble"
+              style={{ 
+                alignSelf: msg.sender === 'You' ? 'flex-end' : 'flex-start',
+                backgroundColor: msg.sender === 'You' ? '#effdde' : '#ffffff'
+              }}
+            >
+              <div className="message-sender">{msg.sender}</div>
               
               {msg.type === 'file' ? (
                 <div>
-                  <span>File: {msg.text}</span>
-                  <br />
-                  <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '5px', color: '#507da2', fontWeight: 'bold', textDecoration: 'none' }}>
-                    Download File
+                  <div className="message-text">File: {msg.text}</div>
+                  <a 
+                    href={msg.fileUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="file-link"
+                  >
+                    📎 Download File
                   </a>
                 </div>
               ) : (
-                <div>{msg.text}</div>
+                <div className="message-text">{msg.text}</div>
               )}
 
-              <div style={{ fontSize: '10px', color: '#999', textAlign: 'right', marginTop: '3px' }}>{msg.time}</div>
+              <div className="message-time">{msg.time}</div>
             </div>
           ))}
         </div>
 
-        {/* Input Footer */}
-        <div style={{ padding: '15px', backgroundColor: '#ffffff', borderTop: '1px solid #dadada', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <label style={{ padding: '10px 15px', backgroundColor: '#f0f0f0', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold', color: '#555' }}>
-            Attach
+        <div className="input-footer">
+          <label className="attach-button">
+            📎 Attach
             <input type="file" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
           <input 
@@ -114,14 +145,13 @@ function App() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #cccccc', fontSize: '15px', outline: 'none' }}
+            className="message-input"
           />
-          <button onClick={handleSend} style={{ padding: '12px 24px', backgroundColor: '#507da2', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          <button onClick={handleSend} className="send-button">
             Send
           </button>
         </div>
       </div>
-
     </div>
   )
 }

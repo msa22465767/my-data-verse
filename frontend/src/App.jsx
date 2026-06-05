@@ -3,6 +3,7 @@ import './App.css';
 
 function App() {
   const [messages, setMessages] = useState([]);
+<<<<<<< HEAD
   const [savedMessages, setSavedMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -13,6 +14,16 @@ function App() {
   
   // ⚠️ LIVE PUSH KARNE KE LIYE RENDER LINK WAPAS DAALO
 const BACKEND_URL = "https://my-data-verse.onrender.com"; 
+=======
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeChat, setActiveChat] = useState('global');
+  const messagesEndRef = useRef(null);
+  
+  // ⚠️ CHANGE THIS TO YOUR BACKEND URL
+  const BACKEND_URL = "http://192.168.x.x:5000"; // Laptop IP daalo
+  // const BACKEND_URL = "https://your-render-backend.onrender.com"; // Jab Render fix ho jaye
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -21,6 +32,7 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
 
   useEffect(() => {
     scrollToBottom();
+<<<<<<< HEAD
   }, [messages, savedMessages]);
 
   // Lock body scroll when sidebar is open on mobile
@@ -36,10 +48,16 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
   }, [sidebarOpen]);
 
   // Fetch global messages
+=======
+  }, [messages]);
+
+  // Fetch messages
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
   useEffect(() => {
     fetch(`${BACKEND_URL}/api/messages`)
       .then(res => res.json())
       .then(data => setMessages(data))
+<<<<<<< HEAD
       .catch(err => console.error("Error fetching messages:", err));
     
     // Load saved messages from localStorage
@@ -66,10 +84,26 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
   }, [savedMessages]);
 
   // Send message to global chat
+=======
+      .catch(err => console.error("Error:", err));
+    
+    // Polling for real-time (temporary until Socket.io)
+    const interval = setInterval(() => {
+      fetch(`${BACKEND_URL}/api/messages`)
+        .then(res => res.json())
+        .then(data => setMessages(data));
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [BACKEND_URL]);
+
+  // Send message
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
+<<<<<<< HEAD
     const tempMessage = { 
       text: input, 
       sender: 'You', 
@@ -81,6 +115,10 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
     if (activeChat === 'global') {
       setMessages([...messages, tempMessage]);
     }
+=======
+    const tempMessage = { text: input, sender: 'You', temp: true };
+    setMessages([...messages, tempMessage]);
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
     setInput('');
 
     try {
@@ -92,6 +130,7 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
 
       if (response.ok) {
         const newMessage = await response.json();
+<<<<<<< HEAD
         if (activeChat === 'global') {
           setMessages(prev => prev.filter(m => !m.temp).concat(newMessage));
         }
@@ -100,9 +139,16 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
       alert("Message send failed!");
       if (activeChat === 'global') {
         setMessages(prev => prev.filter(m => !m.temp));
+=======
+        setMessages(prev => prev.filter(m => !m.temp).concat(newMessage));
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
       }
+    } catch (error) {
+      alert("Message send failed!");
+      setMessages(prev => prev.filter(m => !m.temp));
     }
   };
+<<<<<<< HEAD
 
   // Save message to Saved Messages
   const saveToSavedMessages = (message) => {
@@ -325,8 +371,105 @@ const BACKEND_URL = "https://my-data-verse.onrender.com";
           </button>
         </form>
       </div>
+=======
+
+  return (
+    <div className="telegram-container">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <div className="avatar">✨</div>
+          <h3>MyDataVerse</h3>
+        </div>
+        
+        <div className="search-bar">
+          <input type="text" placeholder="Search chats..." />
+        </div>
+
+        <div className="chat-list">
+          <div 
+            className={`chat-item ${activeChat === 'global' ? 'active' : ''}`}
+            onClick={() => setActiveChat('global')}
+          >
+            <div className="chat-avatar">🌐</div>
+            <div className="chat-info">
+              <h4>Global Vault</h4>
+              <p>Tap to start messaging...</p>
+            </div>
+          </div>
+          
+          <div className="chat-item">
+            <div className="chat-avatar">⭐</div>
+            <div className="chat-info">
+              <h4>Saved Messages</h4>
+              <p>Your private space</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Window */}
+      <div className="chat-window">
+        <div className="chat-header">
+          <div className="chat-info">
+            <h3>Global Vault</h3>
+            <span className="status">online</span>
+          </div>
+        </div>
+
+        <div className="messages-container">
+          {messages.map((msg, index) => (
+            <div 
+              key={index} 
+              className={`message-group ${msg.sender === 'You' ? 'sent' : 'received'}`}
+            >
+              {msg.sender !== 'You' && (
+                <div className="message-avatar">🤖</div>
+              )}
+              <div className="message-bubble">
+                {msg.sender !== 'You' && (
+                  <div className="sender-name">{msg.sender}</div>
+                )}
+                <div className="message-text">{msg.text}</div>
+                <div className="message-time">
+                  {new Date().toLocaleTimeString()}
+                  {msg.sender === 'You' && ' ✓'}
+                </div>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {isTyping && (
+          <div className="typing-indicator">
+            Someone is typing...
+          </div>
+        )}
+
+        <form onSubmit={sendMessage} className="input-container">
+          <button type="button" className="attach-btn">📎</button>
+          <input 
+            type="text" 
+            placeholder="Write a message..."
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setIsTyping(true);
+              setTimeout(() => setIsTyping(false), 1000);
+            }}
+          />
+          <button type="button" className="emoji-btn">😊</button>
+          <button type="submit" className="send-btn">➤</button>
+        </form>
+      </div>
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
     </div>
   );
 }
 
+<<<<<<< HEAD
 export default App;
+=======
+export default App;
+>>>>>>> 93f1e7c378cc59dac6d730bde053aebe5da09b7d
